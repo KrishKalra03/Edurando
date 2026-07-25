@@ -1,61 +1,143 @@
 <template>
-    <footer class="bg-[#e4e2ee] z-50 dark:bg-[#2c2c2c]">
-        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col justify-between sm:flex-row">
-                <div>
-                    <h3 class="text-base leading-6 font-medium text-[#231e44] dark:text-[#b5a9fc] py-4">Links</h3>
-                    <ul class="text-base leading-6 text-[#7b73ac] dark:text-[#7f6dfc] max-w-7xl flex-col sm:flex-row mx-auto">
-                        <li><router-link to="/about">About</router-link></li>
-                        <li><router-link to="/imprint">Imprint</router-link></li>
-                        <li><router-link to="/TermsOfService">Terms of Service</router-link></li>
-                        <li><router-link to="/PrivacyPolicy">Privacy Policy</router-link></li>
-                        <li><router-link to="/LegalNotice">Legal Notice</router-link></li>
-                        <li><router-link to="/FAQ">FAQ</router-link></li>
-                    </ul>
-                </div>
-                <div>
-                    <h3 class="text-base leading-6 font-medium text-[#231e44] dark:text-[#b5a9fc] py-4">Socials</h3>
-                    <ul class="text-[#7b73ac] dark:text-[#7f6dfc] leading-6 flex flex-wrap text-xl max-w-7xl mx-auto ">
-                        <li class="pr-2"><a href="https://www.instagram.com/"><font-awesome-icon icon="fab fa-instagram"/></a></li>
-                        <li class="px-2"><a href="https://www.twitter.com/"><font-awesome-icon icon="fab fa-twitter"/></a></li>
-                        <li class="px-2"><a href="https://www.facebook.com/"><font-awesome-icon icon="fab fa-facebook"/></a></li>
-                        <li class="px-2"><a href="https://www.tiktok.com/"><font-awesome-icon icon="fab fa-tiktok"/></a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h3 class="text-base leading-6 font-medium text-[#231e44] dark:text-[#b5a9fc] py-4">Contact Us</h3>
-                    <ul class=" text-base leading-6 text-[#7b73ac] dark:text-[#7f6dfc] max-w-7xl flex-col  mx-auto">
-                        <li><a href="mailto:info.edurando@gmail.com">info.edurando@gmail.com</a></li>
-                        <li><a href="tel:+49 40 87654321">+49 40 87654321</a></li>
-                        <li><router-link to="/ContactForm">Contact Form</router-link></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="text-center text-sm my-6 text-[#231e44] dark:text-[#7f6dfc]">
-                <button @click="scrollToTop" class="w-max mx-auto justify-center py-2 px-4 border border-transparent font-medium rounded-md text-white bg-[#483d8b] hover:bg-purple-950 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    <font-awesome-icon icon="arrow-up"/>
-                </button>
-                <hr class="my-4 border-[#7b73ac]"/>
-                © 2023 Edurando. All rights reserved.
-            </div>
+  <footer class="border-t" style="background: var(--bg-surface); border-color: var(--border-subtle)">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+      <!-- Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 mb-12">
+        <!-- Brand column -->
+        <div class="md:col-span-1">
+          <div class="flex items-center gap-2.5 mb-4">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold text-sm"
+                 style="background: var(--gradient-brand)">E</div>
+            <span class="text-lg font-bold gradient-text">Edurando</span>
+          </div>
+          <p class="text-sm leading-relaxed" style="color: var(--text-muted)">
+            Connecting students with the world's best educators. Learn anything, anywhere.
+          </p>
         </div>
-    </footer>
+
+        <!-- Links -->
+        <div>
+          <h3 class="footer-heading">Links</h3>
+          <ul class="space-y-2.5">
+            <li v-for="link in links" :key="link.to">
+              <router-link :to="link.to" class="footer-link">{{ link.label }}</router-link>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Socials -->
+        <div>
+          <h3 class="footer-heading">Socials</h3>
+          <div class="flex gap-2.5 flex-wrap">
+            <a
+              v-for="s in socials"
+              :key="s.href"
+              :href="s.href"
+              target="_blank"
+              rel="noopener"
+              class="social-btn"
+            >
+              <font-awesome-icon :icon="s.icon" />
+            </a>
+          </div>
+        </div>
+
+        <!-- Contact -->
+        <div>
+          <h3 class="footer-heading">Contact</h3>
+          <ul class="space-y-2.5">
+            <li>
+              <a href="mailto:kontakt@devvault.de" class="footer-link">
+                kontakt@devvault.de
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Bottom bar -->
+      <div
+        class="flex flex-col sm:flex-row items-center justify-between pt-8 border-t gap-4"
+        style="border-color: var(--border-subtle)"
+      >
+        <p class="text-xs" style="color: var(--text-muted)">© 2026 Edurando. All rights reserved.</p>
+        <button
+          @click="scrollToTop"
+          class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white transition-all hover:scale-105 hover:opacity-90"
+          style="background: var(--gradient-brand)"
+        >
+          <font-awesome-icon icon="arrow-up" />
+          Back to top
+        </button>
+      </div>
+    </div>
+  </footer>
 </template>
 
-<script>
-export default {
-    name: 'Footer',
-    methods: {
-        scrollToTop() {
-            window.scrollTo({
-                top: 0,
-                behavior: "smooth"
-            });
-        }
-    }
-}
+<script setup>
+const links = [
+  { to: '/imprint',        label: 'Imprint' },
+  { to: '/TermsOfService', label: 'Terms of Service' },
+  { to: '/PrivacyPolicy',  label: 'Privacy Policy' },
+]
 
+const socials = [
+  { href: 'https://www.instagram.com/', icon: 'fab fa-instagram' },
+  { href: 'https://www.twitter.com/',   icon: 'fab fa-twitter' },
+  { href: 'https://www.facebook.com/',  icon: 'fab fa-facebook' },
+  { href: 'https://www.tiktok.com/',    icon: 'fab fa-tiktok' },
+]
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 </script>
 
 <style scoped>
+.gradient-text {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.footer-heading {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+.footer-link {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.15s ease;
+  display: block;
+}
+.footer-link:hover {
+  color: #8b5cf6;
+}
+
+.social-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  transition: transform 0.15s ease, color 0.15s ease, background 0.15s ease;
+  text-decoration: none;
+}
+.social-btn:hover {
+  transform: translateY(-2px) scale(1.08);
+  color: #8b5cf6;
+  border-color: rgba(139, 92, 246, 0.35);
+}
 </style>

@@ -1,7 +1,8 @@
+import { defineStore } from "pinia";
 
-//pinia store for storing the email
-import {defineStore} from "pinia";
-
-export const useEmailStore = defineStore('email', {
-    state: () => ({ email: "" }), // initial state
-},)
+export const useEmailStore = defineStore('reset-email', {
+    state: () => ({ email: "" }),
+    persist: {
+        storage: sessionStorage,
+    },
+})

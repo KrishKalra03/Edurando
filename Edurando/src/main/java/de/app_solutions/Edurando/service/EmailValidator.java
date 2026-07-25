@@ -1,47 +1,154 @@
 package de.app_solutions.Edurando.service;
 
-import de.app_solutions.Edurando.model.UserProfile;
 import de.app_solutions.Edurando.repository.UserProfileRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 @Service
+@Slf4j
 public class EmailValidator {
 
+    private static final String HIPOLABS_URL = "http://universities.hipolabs.com/search?domain=";
+
+    /** Domains explicitly allowed regardless of academic check (for development/testing). */
+    private static final List<String> ALLOWED_DOMAINS = List.of(
+            "gmail.com", "outlook.com", "hotmail.com"
+    );
+
+    /**
+     * Academic domain patterns used as fallback when the Hipolabs API returns no result.
+     * Each pattern is checked against both the original domain and its parent domain
+     * (e.g. for stud.th-luebeck.de we also check th-luebeck.de).
+     */
+    private static final List<Pattern> ACADEMIC_PATTERNS = List.of(
+        // German prefix-based academic domains: th-*, fh-*, hs-*, uni-*, haw-*, htw-*, etc.
+        Pattern.compile(
+            "^(uni|fh|th|hs|haw|htw|hbk|hfm|hfk|hmt|hfg|hfh|ph|eah|ehs|eh|oth|bht|rwu|" +
+            "h-da|h-brs|hsbi|thws|thga|thu|thf|jade|leuphana|burg|btk|hawk|dhge|dhfpg|" +
+            "mh|hfwu|hkom|hcu|hgb|muthesius|hszg|hmtm|hbksaar|palucca|hfbk|hbk|akkon|" +
+            "khsb|ksh|khkt|khm|khb|kh|hspv|hska|hshl|hsf|hsba|hf|hdb|hdm|hdwm|hchp|" +
+            "hcom|hc)[-.].*\\.de$",
+            Pattern.CASE_INSENSITIVE),
+        // Student subdomains: stud.th-luebeck.de, stud.uni-xyz.de
+        Pattern.compile("^stud\\..*\\.de$", Pattern.CASE_INSENSITIVE),
+        // US and most international: .edu TLD
+        Pattern.compile(".+\\.edu$", Pattern.CASE_INSENSITIVE),
+        // UK: .ac.uk
+        Pattern.compile(".+\\.ac\\.uk$", Pattern.CASE_INSENSITIVE),
+        // Austria: .ac.at
+        Pattern.compile(".+\\.ac\\.at$", Pattern.CASE_INSENSITIVE),
+        // Australia: .edu.au
+        Pattern.compile(".+\\.edu\\.au$", Pattern.CASE_INSENSITIVE),
+        // Japan: .ac.jp
+        Pattern.compile(".+\\.ac\\.jp$", Pattern.CASE_INSENSITIVE),
+        // New Zealand: .ac.nz
+        Pattern.compile(".+\\.ac\\.nz$", Pattern.CASE_INSENSITIVE),
+        // South Africa: .ac.za
+        Pattern.compile(".+\\.ac\\.za$", Pattern.CASE_INSENSITIVE),
+        // Brazil: .edu.br
+        Pattern.compile(".+\\.edu\\.br$", Pattern.CASE_INSENSITIVE),
+        // Netherlands: .nl academic institutions
+        Pattern.compile(".+\\.(?:uva|vu|tue|utwente|rug|uu|leidenuniv|tudelft|ru|um)\\.nl$",
+                Pattern.CASE_INSENSITIVE),
+        // Switzerland: ETH, EPFL, Uni Zurich
+        Pattern.compile(".+\\.(?:ethz|epfl|uzh|unibas|unige|unisg|unibe|unifr|unil)\\.ch$",
+                Pattern.CASE_INSENSITIVE)
+    );
+
+    // Permanently cache domain lookups for the lifetime of the process
+    private final Map<String, Boolean> domainCache = new ConcurrentHashMap<>();
 
     private final UserProfileRepository userProfileRepository;
+    private final RestTemplate restTemplate;
 
-    public EmailValidator(UserProfileRepository userProfileRepository) {
+    public EmailValidator(UserProfileRepository userProfileRepository,
+                          RestTemplateBuilder restTemplateBuilder) {
         this.userProfileRepository = userProfileRepository;
+        this.restTemplate = restTemplateBuilder
+                .setConnectTimeout(Duration.ofSeconds(3))
+                .setReadTimeout(Duration.ofSeconds(3))
+                .build();
     }
 
     public Pair<Boolean, String> testMail(String email) {
+        boolean valid = true;
+        StringBuilder message = new StringBuilder();
 
-        boolean rs = true;
-        StringBuilder sb = new StringBuilder();
+        String[] parts = email.split("@");
+        if (parts.length != 2 || parts[0].isBlank() || parts[1].isBlank()) {
+            return Pair.of(false, "Invalid email format.");
+        }
+        String domain = parts[1].toLowerCase();
 
-        String[] split = email.split("@");
-        List<String> allowedDomains = Arrays.asList("vp-uni.de", "uni-leipzig.de", "apollon-hochschule.de", "jacobs-university.de", "thi.de", "fhdw.de", "uni-tuebingen.de", "fau.de", "uni-konstanz.de", "intra.udk-berlin.de", "hfk-bayreuth.de", "escp.eu", "dhgs-hochschule.de", "htwsaar.de", "uni-muenster.de", "law-school.de", "hfmt-koeln.de", "ihl.eu", "hs-bochum.de", "ThH-Friedensau.de", "zuv.tu-freiberg.de", "tu-clausthal.de", "dhge.de", "eh-darmstadt.de", "reutlingen-university.de", "zvw.uni-goettingen.de", "infraserv.com", "rektorat.uni-heidelberg.de", "tiho-hannover.de", "hs-gm.de", "fh-potsdam.de", "uni-vechta.de", "kom.fra-uas.de", "hmt-leipzig.de", "hs-ansbach.de", "pth-muenster.de", "fernuni-hagen.de", "ash-berlin.eu", "uni-flensburg.de", "hsf.sachsen.de", "kunstakademie-duesseldorf.de", "rptu.de", "karlshochschule.org", "hfwu.de", "w-hs.de", "evh-bochum.de", "ku.de", "oth-aw.de", "pvw.uni-frankfurt.de", "folkwang-uni.de", "verwaltung.tu-chemnitz.de", "uni-heidelberg.de", "ur.de", "hft-stuttgart.de", "hochschule-bc.de", "uni-due.de", "tu-ilmenau.de", "hs-koblenz.de", "s-hochschule.de", "karlshochschule.de", "hmtm.de", "kunstakademie-\nduesseldorf.de", "hs-ruhrwest.de", "hfk-heidelberg.de", "hs-hannover.de", "hs-furtwangen.de", "unibw.de", "verw.uni-koeln.de", "iu.de", "hspv.nrw.de", "di-uni.de", "hfbk-dresden.de", "adbk.mhn.de", "khsb-berlin.de", "uni-hohenheim.de", "bht-berlin.de", "fh-zwickau.de", "hs-bremerhaven.de", "hs-duesseldorf.de", "hchp.de", "uni-greifswald.de", "hs-rottenburg.de", "fh-kiel.de", "hfjs.eu", "uni-siegen.de", "rwu.de", "ksh-m.de", "dshs-koeln.de", "hs-wismar.de", "uni-bamberg.de", "uni-luebeck.de", "uni-bayreuth.de", "dhfpg.de", "iu.org", "hs-nb.de", "ostfalia.de", "hfmdk-frankfurt.de", "thga.de", "hs-emden-leer.de", "hfg-offenbach.de", "kh-freiburg.de", "boulezsaal.de", "Fernuni-Hagen.de", "hswt.de", "hs-nordhausen.de", "hsu-hh.de", "rektorat.uni-halle.de", "mh-hannover.de", "uni-trier.de", "kiho-wuppertal.de", "cvjm.de", "ovgu.de", "kh-mz.de", "th-ab.de", "uv.uni-kiel.de", "hmkw.de", "hff-muc.de", "bo.drs.de", "hwr-berlin.de", "uni-weimar.de", "hbksaar.de", "hfmt.hamburg.de", "ism.de", "ph-ludwigsburg.de", "hfmdd.de", "media-gmbh.de", "serv1.hfbk-dresden.de", "zv.uni-paderborn.de", "mh-trossingen.de", "hs-heilbronn.de", "uni-koblenz-landau.de", "hs-mainz.de", "verw.thm.de", "h-ka.de", "hs-anhalt.de", "munich-business-school.de", "presse.uni-augsburg.de", "hszg.de", "htwk-leipzig.de", "hs-flensburg.de", "staedelschule.de", "hs-kl.de", "mh-luebeck.de", "ib-hochschule.de", "stud.th-luebeck.de", "esmt.org", "hs-coburg.de", "uni-potsdam.de", "hs-mittweida.de", "hochschule-stralsund.de", "hfm-detmold.de", "hbk-bs.de", "mhb-fontane.de", "haw-hamburg.de", "hwg-lu.de", "tuhh.de", "hfs-berlin.de", "htw-dresden.de", "alanus.edu", "hhl.de", "fh-dortmund.de", "uni-halle.de", "verw.hs-fulda.de", "htwg-konstanz.de", "hs-bremen.de", "kirchenmusikhochschule.de", "hfk-bw.de", "macromedia.de", "fs.de", "akad.de", "ph-gmuend.de", "nordakademie.de", "FH-Kiel.de", "hs-rm.de", "hs-niederrhein.de", "gusgermany.de", "akademie.polizei.niedersachsen.de", "fliedner-fachhochschule.de", "uni-giessen.de", "udk-berlin.de", "kunstakademie-muenster.de", "filmuniversitaet.de", "tu-dresden.de", "fh-wedel.de", "hs-fresenius.de", "vw.ph-heidelberg.de", "fh-aachen.de", "uni-hamburg.de", "augustana.de", "uni-saarland.de", "psychologische-hochschule.de", "univw.uni-saarland.de", "victoria-hochschule.de", "zv.uni-leipzig.de", "hbk-essen.de", "hs-mannheim.de", "hmtm-hannover.de", "akkon-hochschule.de", "hs-pforzheim.de", "hdbw-hochschule.de", "tu-darmstadt.de", "europa-uni.de", "uni-wuerzburg.de", "uni-bonn.de", "eh-berlin.de", "th-reutlingen.de", "ehs-dresden.de", "hks-ottersberg.de", "fra-uas.de", "bhh.hamburg.de", "th-owl.de", "hfm.saarland.de", "fthgiessen.de", "tum.de", "ipu-berlin.de", "hs-osnabrueck.de", "vw.ph-weingarten.de", "eah-jena.de", "hamburger-fh.de", "zhv.rwth-aachen.de", "hfm-karlsruhe.de", "hmdk-stuttgart.de", "hgb-leipzig.de", "khm.de", "presse.uni-siegen.de", "muthesius.de", "hs-merseburg.de", "fu-berlin.de", "thws.de", "hs-esslingen.de", "uni-bremen.de", "cbs.de", "th-rosenheim.de", "hdwm.org", "diakonieneuendettelsau.de", "haw-landshut.de", "hfm-berlin.de", "sdi-muenchen.de", "abk-stuttgart.de", "merz-akademie.de", "bethel.de", "rsh-duesseldorf.de", "zuv.uni-hannover.de", "uni-mannheim.de", "hkom.uni-stuttgart.de", "th-nuernberg.de", "hnu.de", "uni-osnabrueck.de", "tu-braunschweig.de", "hs-schmalkalden.de", "th-brandenburg.de", "hfk-bremen.de", "steinbeis-hochschule.de", "uni-jena.de", "mh-freiburg.de", "sankt-georgen.de", "kunstakademie-karlsruhe.de", "katho-nrw.de", "adbk-nuernberg.de", "the-klu.org", "kh-berlin.de", "oth-regensburg.de", "diploma.de", "wb-fernstudium.de", "hnee.de", "th-wildau.de", "uni-frankfurt.de", "fh-dresden.eu", "uni-ulm.de", "phwt.de", "hs21.de", "zu.de", "hfm-weimar.de", "hof-university.de", "ebs.edu", "uni-kassel.de", "EHK-Halle.de", "hdm-stuttgart.de", "hfg-karlsruhe.de", "kit.edu", "eh-ludwigsburg.de", "euro-fh.de", "hs-albsig.de", "lmu.de", "uni-bielefeld.de", "hs-worms.de", "touroberlin.de", "fh-mittelstand.de", "whu.edu", "uni-rostock.de", "hsbi.de", "hfbk.hamburg.de", "uni-wh.de", "ph-freiburg.de", "rfh-koeln.de", "phb.de", "htw-berlin.de", "eh-tabor.de", "vw.hcu-hamburg.de", "muho-mannheim.de", "palucca.eu", "fh-muenster.de", "uni-hildesheim.de", "thf-paderborn.de", "publiccologne.de", "pfh.de", "fh-swf.de", "hhu.de", "uni-hannover.de", "jade-hs.de", "hu-berlin.de", "pr.uni-freiburg.de", "fhsmp.de", "businessschool-berlin.de", "TU-Berlin.de", "nbs.de", "rauheshaus.de", "uni-marburg.de", "th-koeln.de", "tu-dortmund.de", "hfkm-regensburg.de", "rub.de", "fh-westkueste.de", "h2.de", "uni-goettingen.de", "hmt-rostock.de", "leuphana.de", "hfm-wuerzburg.de", "h-brs.de", "fh-erfurt.de", "eh-freiburg.de", "hawk.de", "berlin-international.de", "hs-gesundheit.de", "hs-kempten.de", "srh.de", "hsba.de", "uni-passau.de", "fham.de", "b-tu.de", "hs-harz.de", "th-bingen.de", "fom.de", "medicalschool-berlin.de", "fh-trier.de", "vw.ph-karlsruhe.de", "hfph.de", "hfg-gmuend.de", "evhn.de", "e-b-z.de", "freie-hochschule-stuttgart.de", "hs-offenburg.de", "thu.de", "hs-aalen.de", "uol.de", "khkt.de", "lthh-oberursel.de", "tu-chemnitz.de", "bbw-hochschule.de", "uni-mainz.de", "hsw-hameln.de", "hs-augsburg.de", "mediadesign.de", "hm.edu", "hertie-school.org", "uni-wuppertal.de", "medicalschool-hamburg.de", "mobile-university.de", "th-deg.de", "burg-halle.de", "uni-erfurt.de", "h-da.de", "ist.de", "hshl.de", "uni-speyer.de");
-        List<UserProfile> users = userProfileRepository.findAll();
-
-        if (!allowedDomains.contains(split[1])) {
-            sb.append( "Email is not valid.");
-            rs = false;
+        // Uniqueness check — single targeted query instead of loading all users
+        if (userProfileRepository.findUserProfileByUsername(email).isPresent()) {
+            message.append("Email is already registered.");
+            valid = false;
         }
 
-        for (UserProfile user : users) {
-            if (user.getUsername().equalsIgnoreCase(email)) {
-                sb.append( "Email is not unique.");
-                rs = false;
-                break; // keine weitere Überprüfung erforderlich, wenn eine Übereinstimmung gefunden wurde
+        // Academic domain check (skip for explicitly allowed domains)
+        if (!ALLOWED_DOMAINS.contains(domain) && !isAcademicDomain(domain)) {
+            message.append("Please use a university or college email address.");
+            valid = false;
+        }
+
+        return Pair.of(valid, message.toString());
+    }
+
+    // ── Domain resolution ──────────────────────────────────────────────────────
+
+    private boolean isAcademicDomain(String domain) {
+        Boolean cached = domainCache.get(domain);
+        if (cached != null) return cached;
+
+        // Check the domain itself, then its immediate parent (handles stud.th-luebeck.de → th-luebeck.de)
+        List<String> candidates = buildCandidates(domain);
+
+        for (String candidate : candidates) {
+            if (queryHipolabs(candidate) || matchesAcademicPattern(candidate)) {
+                domainCache.put(domain, true);
+                return true;
             }
         }
 
-        return Pair.of(rs, sb.toString());
+        domainCache.put(domain, false);
+        return false;
+    }
 
+    /** Queries the Hipolabs API. Returns true when at least one institution matches. */
+    private boolean queryHipolabs(String domain) {
+        try {
+            Object[] result = restTemplate.getForObject(HIPOLABS_URL + domain, Object[].class);
+            return result != null && result.length > 0;
+        } catch (Exception e) {
+            log.warn("Hipolabs API unavailable for domain '{}': {}", domain, e.getMessage());
+            return false;
+        }
+    }
+
+    /** Checks the domain against the compiled academic patterns. */
+    private boolean matchesAcademicPattern(String domain) {
+        return ACADEMIC_PATTERNS.stream().anyMatch(p -> p.matcher(domain).matches());
+    }
+
+    /**
+     * Returns the domain itself plus its parent domain (one label stripped from the left).
+     * Example: stud.th-luebeck.de → [stud.th-luebeck.de, th-luebeck.de]
+     * A top-level domain like lmu.de → [lmu.de]  (no single-label parent to add)
+     */
+    private static List<String> buildCandidates(String domain) {
+        String[] labels = domain.split("\\.");
+        if (labels.length <= 2) return List.of(domain);
+        String parent = domain.substring(domain.indexOf('.') + 1);
+        return List.of(domain, parent);
     }
 }

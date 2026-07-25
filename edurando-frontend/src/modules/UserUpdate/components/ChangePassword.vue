@@ -1,85 +1,141 @@
 <template>
-    <edit-page></edit-page>
-    <div class="min-h-screen bg-gray-100 dark:bg-[#181818] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-md w-full space-y-8">
-            <div>
-                <h2 class="mt-5 text-center text-3xl font-extrabold text-gray-900 dark:text-[#b5a9fc]">Change Password</h2>
-            </div>
-            <form class="mt-8 space-y-6" @submit.prevent="editPassword">
-                <div class="rounded-md shadow-sm space-y-2">
-                    <div>
-                        <label for="currentPassword" class="text-black dark:text-[#b5a9fc] font-font-family p-2">Current Password</label>
-                        <input id="currentPassword" name="currentPassword" type="password"
-                               v-model="password.currentPassword"
-                               autocomplete="currentPassword" required
-                               class="mb-4 appearance-none rounded-none relative block focus:outline-none w-full px-3 py-2 border border-gray-300 dark:bg-[#c6c5d1] dark:border-[#9895ad] dark:text-black placeholder-gray-500 text-gray-900 rounded-t-md focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
-                               placeholder="Current Password">
-                    </div>
+  <edit-page></edit-page>
 
-                    <div>
-                        <label for="newPassword" class="text-black dark:text-[#b5a9fc] font-font-family p-2">New Password</label>
-                        <input id="newPassword" name="newPassword" type="password" v-model="password.newPassword"
-                               autocomplete="newPassword" required
-                               class="mb-4 appearance-none rounded-none relative block focus:outline-none w-full px-3 py-2 border border-gray-300 dark:bg-[#c6c5d1] dark:border-[#9895ad] dark:text-black placeholder-gray-500 text-gray-900 rounded-t-md focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
-                               placeholder="New Password">
-                        <p v-if="showPasswordError(password.newPassword)"
-                            class="text-red-500 text-xs">Please choose a more secure password, at least 8 characters long, known only to you, and difficult for others to guess."</p>
-
-                    </div>
-
-                    <div>
-                        <label for="newPasswordRepeat" class="text-black dark:text-[#b5a9fc] font-font-family p-2">Repeat New
-                            Password</label>
-                        <input id="newPasswordRepeat" name="newPasswordRepeat" type="password"
-                               v-model="password.newPasswordRepeat"
-                               autocomplete="newPasswordRepeat" required
-                               class="mb-4 appearance-none rounded-none relative block focus:outline-none w-full px-3 py-2 border border-gray-300 dark:bg-[#c6c5d1] dark:border-[#9895ad] dark:text-black placeholder-gray-500 text-gray-900 rounded-t-md focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
-                               placeholder="Repeat New Password">
-                    </div>
-                </div>
-                    <div>
-                        <button type="submit"
-                                class="mt-7 text-center mx-auto w-1/2 flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#483d8b] hover:bg-purple-950 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            Save Changes
-                        </button>
-                    </div>
-            </form>
+  <div class="auth-page">
+    <div class="relative w-full max-w-md mx-auto">
+      <div class="auth-card">
+        <div class="text-center mb-8">
+          <div class="icon-badge mx-auto mb-4">
+            <font-awesome-icon icon="fa-solid fa-key" class="text-white text-xl" />
+          </div>
+          <h1 class="text-2xl font-bold" style="color: var(--text-primary)">Change Password</h1>
+          <p class="text-sm mt-1" style="color: var(--text-muted)">Keep your account secure</p>
         </div>
+
+        <form @submit.prevent="editPassword" class="space-y-4">
+          <div>
+            <label class="field-label">Current Password</label>
+            <input type="password" v-model="password.currentPassword" placeholder="••••••••" required class="field-input" />
+          </div>
+          <div>
+            <label class="field-label">New Password</label>
+            <input type="password" v-model="password.newPassword" placeholder="••••••••" required class="field-input" />
+            <p v-if="password.newPassword.length > 0 && showPasswordError(password.newPassword, password.newPasswordRepeat).length"
+               class="text-red-400 text-xs mt-1.5">
+              Choose a stronger password (min. 8 chars, mixed case, number).
+            </p>
+          </div>
+          <div>
+            <label class="field-label">Repeat New Password</label>
+            <input type="password" v-model="password.newPasswordRepeat" placeholder="••••••••" required class="field-input" />
+          </div>
+
+          <p v-if="result.length" class="text-red-400 text-sm text-center bg-red-500/10 rounded-xl p-2.5">{{ result }}</p>
+
+          <button type="submit" class="btn-primary w-full mt-2">Save Changes</button>
+        </form>
+      </div>
     </div>
-  <Footer></Footer>
+  </div>
+
+  <Footer />
 </template>
 
 <script setup>
-import {reactive, ref, watch} from 'vue';
-import axios from 'axios';
-import EditPage from '@/modules/UserUpdate/EditPage.vue';
-import Footer from "@/modules/Footer/Footer.vue";
-import {useRouter} from "vue-router";
-import {showPasswordError} from '@/functions/functions'
-import {useUserStore} from "@/store/store";
+import { reactive, ref } from 'vue'
+import axios from 'axios'
+import EditPage from '@/modules/UserUpdate/EditPage.vue'
+import Footer from "@/modules/Footer/Footer.vue"
+import { useRouter } from "vue-router"
+import { showPasswordError } from '@/functions/functions'
+import { useUserStore } from "@/store/store"
 
 const result = ref('')
 const router = useRouter()
 const userStore = useUserStore()
 const password = reactive({
-    id: userStore.getUser.id,
-    currentPassword: '',
-    newPassword: '',
-    newPasswordRepeat: '',
-});
+  id: userStore.getUser.id,
+  currentPassword: '',
+  newPassword: '',
+  newPasswordRepeat: '',
+})
 
 async function editPassword() {
-    try {
-        const response = await axios.put('/editPassword', password);
-        result.value = response.data;
-        await router.push('/');
-    } catch (error) {
-        result.value = error.response.data
-        console.log(result.value)
-    }
+  try {
+    const response = await axios.put('/editPassword', password)
+    result.value = response.data
+    await router.push('/')
+  } catch (error) {
+    result.value = error.response.data
+  }
 }
-
 </script>
 
 <style scoped>
+.auth-page {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  background: var(--bg-base);
+}
+
+.auth-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: var(--shadow-elevated);
+}
+
+.icon-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradient-brand);
+}
+
+.field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+}
+
+.field-input {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.field-input:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
+}
+.field-input::placeholder { color: var(--text-muted); }
+
+.btn-primary {
+  display: block;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  border: none;
+  cursor: pointer;
+  background: var(--gradient-brand);
+  transition: opacity 0.2s, transform 0.15s;
+}
+.btn-primary:hover  { opacity: 0.92; transform: scale(1.02); }
+.btn-primary:active { transform: scale(0.98); }
 </style>

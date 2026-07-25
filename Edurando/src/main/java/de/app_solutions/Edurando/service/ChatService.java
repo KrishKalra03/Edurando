@@ -27,6 +27,26 @@ public class ChatService {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
+    public ChatMessage saveMessage(ChatMessageRequest chatMessageRequest) {
+        Optional<UserProfile> sender = userProfileRepository.findUserProfileById(chatMessageRequest.sender());
+        Optional<UserProfile> receiver = userProfileRepository.findUserProfileById(chatMessageRequest.receiver());
+
+        if (sender.isEmpty() || receiver.isEmpty()) {
+            throw new IllegalStateException("Sender or receiver not found");
+        }
+
+        ChatMessage message = new ChatMessage(
+                chatMessageRequest.sender(),
+                chatMessageRequest.receiver(),
+                chatMessageRequest.content(),
+                LocalDateTime.now()
+        );
+        ChatMessage saved = chatMessageRepository.save(message);
+        sender.get().getChatMessages().add(saved);
+        userProfileRepository.save(sender.get());
+        return saved;
+    }
+
     public Pair<Boolean, String> send(ChatMessageRequest chatMessageRequest) {
 
         // Get the sender and receiver user profiles
@@ -92,37 +112,37 @@ public class ChatService {
         return chatMessages.stream().filter(chatMessage -> (chatMessage.getSender().equals(Long.parseLong(ids[0])) && chatMessage.getReceiver().equals(Long.parseLong(ids[1]))) || (chatMessage.getReceiver().equals(Long.parseLong(ids[0])) && chatMessage.getSender().equals(Long.parseLong(ids[1])))).sorted(Comparator.comparing(ChatMessage::getTimeSent)).collect(Collectors.toList());
     }
 
-     */
-    public List<ChatMessage> getChatMessages(String id) {
-        String[] ids = id.split("-");
-        Long senderId = Long.parseLong(ids[0]);
-        Long receiverId = Long.parseLong(ids[1]);
+         */
+        public List<ChatMessage> getChatMessages(String id) {
+            String[] ids = id.split("-");
+            Long senderId = Long.parseLong(ids[0]);
+            Long receiverId = Long.parseLong(ids[1]);
 
-        UserProfile senderProfile = userProfileRepository.findUserProfileById(senderId)
-                .orElseThrow(() -> new UsernameNotFoundException(String.format(USER_NOT_FOUND_BY_ID, id)));
-        UserProfile receiverProfile = userProfileRepository.findUserProfileById(receiverId)
-                .orElseThrow(() -> new UsernameNotFoundException(String.format(USER_NOT_FOUND_BY_ID, id)));
+            UserProfile senderProfile = userProfileRepository.findUserProfileById(senderId)
+                    .orElseThrow(() -> new UsernameNotFoundException(String.format(USER_NOT_FOUND_BY_ID, id)));
+            UserProfile receiverProfile = userProfileRepository.findUserProfileById(receiverId)
+                    .orElseThrow(() -> new UsernameNotFoundException(String.format(USER_NOT_FOUND_BY_ID, id)));
 
-        List<ChatMessage> senderMessages = senderProfile.getChatMessages();
-        List<ChatMessage> receiverMessages = receiverProfile.getChatMessages();
+            List<ChatMessage> senderMessages = senderProfile.getChatMessages();
+            List<ChatMessage> receiverMessages = receiverProfile.getChatMessages();
 
-        if (senderMessages == null) {
-            senderMessages = new ArrayList<>();
+            if (senderMessages == null) {
+                senderMessages = new ArrayList<>();
+            }
+            if (receiverMessages == null) {
+                receiverMessages = new ArrayList<>();
+            }
+
+            List<ChatMessage> allChatMessages = new ArrayList<>();
+            allChatMessages.addAll(senderMessages);
+            allChatMessages.addAll(receiverMessages);
+
+            return allChatMessages.stream()
+                    .filter(chatMessage -> (chatMessage.getSender().equals(senderId) && chatMessage.getReceiver().equals(receiverId))
+                            || (chatMessage.getReceiver().equals(senderId) && chatMessage.getSender().equals(receiverId)))
+                    .sorted(Comparator.comparing(ChatMessage::getTimeSent))
+                    .collect(Collectors.toList());
         }
-        if (receiverMessages == null) {
-            receiverMessages = new ArrayList<>();
-        }
-
-        List<ChatMessage> allChatMessages = new ArrayList<>();
-        allChatMessages.addAll(senderMessages);
-        allChatMessages.addAll(receiverMessages);
-
-        return allChatMessages.stream()
-                .filter(chatMessage -> (chatMessage.getSender().equals(senderId) && chatMessage.getReceiver().equals(receiverId))
-                        || (chatMessage.getReceiver().equals(senderId) && chatMessage.getSender().equals(receiverId)))
-                .sorted(Comparator.comparing(ChatMessage::getTimeSent))
-                .collect(Collectors.toList());
-    }
 
 }
 

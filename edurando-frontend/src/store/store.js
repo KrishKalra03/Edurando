@@ -1,11 +1,10 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
-import {ref} from "vue";
-
 
 export const useUserStore = defineStore('user', {
     state: () => ({
         user: null,
+        token: null,
         isLoggedOut: true,
         chatReceiver: 0,
         chatReceivers: [],
@@ -13,82 +12,60 @@ export const useUserStore = defineStore('user', {
     }),
     persist: true,
     getters: {
-        getUser() {
-            return this.user;
-        },
-        getIsLoggedOut() {
-            return this.isLoggedOut;
-        },
-        getChatReceiver() {
-            return this.chatReceiver;
-        },
-        getChatReceivers() {
-            return this.chatReceivers;
-        },
-        getSearchResult() {
-            return this.searchResult;
-        },
-
+        getUser()         { return this.user },
+        getIsLoggedOut()  { return this.isLoggedOut },
+        getChatReceiver() { return this.chatReceiver },
+        getChatReceivers(){ return this.chatReceivers },
+        getSearchResult() { return this.searchResult },
     },
     actions: {
+        setSession(token, user) {
+            this.token       = token;
+            this.user        = user;
+            this.isLoggedOut = false;
+            localStorage.setItem('token', token);
+        },
+
         async fetchUser(email) {
             try {
-                const response = await axios.get(`http://localhost:9001/api/v1/profileByEmail/${email}`);
-                const user = response.data;
-                const isLoggedOut = false
-
-                this.user = user;
-                this.isLoggedOut = isLoggedOut
-
-                // Benutzer im Local Storage speichern
-                localStorage.setItem('user', JSON.stringify(user));
-                localStorage.setItem('isLoggedOut', JSON.stringify(isLoggedOut));
-
-                // Weitere Aktionen ausführen
-                // ...
+                const response = await axios.get(`/profileByEmail/${email}`);
+                this.user        = response.data;
+                this.isLoggedOut = false;
             } catch (error) {
                 console.error(error);
             }
         },
+
         async fetchUserById(id) {
             try {
-                const response = await axios.get(`http://localhost:9001/api/v1/profile/${id}`);
-                const user = response.data;
-                const isLoggedOut = false
-
-                this.user = user;
-                this.isLoggedOut = isLoggedOut
-
-                // Benutzer im Local Storage speichern
-                localStorage.setItem('user', JSON.stringify(user));
-                localStorage.setItem('isLoggedOut', JSON.stringify(isLoggedOut));
-
-                // Weitere Aktionen ausführen
-                // ...
+                const response = await axios.get(`/profile/${id}`);
+                this.user        = response.data;
+                this.isLoggedOut = false;
             } catch (error) {
                 console.error(error);
             }
         },
+
         async logOut() {
-            const user = null;
-            const isLoggedOut = true
-            this.user = user
-            this.isLoggedOut = isLoggedOut
-            localStorage.setItem('user', JSON.stringify(user));
-            localStorage.setItem('isLoggedOut', JSON.stringify(isLoggedOut));
+            try {
+                await axios.post('/logout');
+            } catch { /* ignore — token may already be expired */ }
+            this.user        = null;
+            this.token       = null;
+            this.isLoggedOut = true;
+            localStorage.removeItem('token');
         },
+
         async fetchChatReceiverById(id) {
-            const chatReceiver = id
-            this.chatReceiver = chatReceiver
-            localStorage.setItem('chatReceiver', JSON.stringify(chatReceiver))
+            this.chatReceiver = id;
         },
+
         async fetchSearchResult(query) {
             try {
-                const response = await axios.get('/profiles/search/' + query)
-                this.searchResult = response.data
-                localStorage.setItem('searchResult', JSON.stringify(response.data))
+                const response = await axios.get('/profiles/search/' + query);
+                this.searchResult = response.data;
             } catch (error) {
-                console.error(error)
+                console.error(error);
             }
         }
     },

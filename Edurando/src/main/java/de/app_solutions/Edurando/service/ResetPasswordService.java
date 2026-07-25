@@ -36,6 +36,7 @@ public class ResetPasswordService {
     private Map<String, LocalDateTime> lastEmailSentTimes = new HashMap<>();
 
 
+    @Transactional
     public Pair<Boolean, String> resetPassword(ResetPasswordRequest request) {
         Optional<UserProfile> userOpt = userProfileRepository.findUserProfileByUsername(request.getEmail());
         if (userOpt.isEmpty()) {  //!user.isPresent()
@@ -49,6 +50,10 @@ public class ResetPasswordService {
         if (!confirmationCode.get().isConfirmed()) {
             return Pair.of(false, "Passwordrequest-Token is not confirmed.");
         }
+        if (confirmationCode.get().getExpiresAt().isBefore(LocalDateTime.now())) {
+            confirmationCodeRepository.deleteByUser_Username(user.getUsername());
+            return Pair.of(false, "Password reset request has expired. Please start over.");
+        }
         String currentUserPw = user.getPassword();
         Pair<Boolean, String> newPwTuple = passwordValidator.passwordTest(request.getNewPassword(), request.getNewPasswordRepeat());
         if (bCryptPasswordEncoder.matches(request.getNewPassword(), currentUserPw)) {
@@ -57,9 +62,9 @@ public class ResetPasswordService {
         if (!newPwTuple.getFirst()) {
             return newPwTuple;
         }
-        String encodedPassword = bCryptPasswordEncoder.encode(request.getNewPasswordRepeat());
-        user.setPassword(encodedPassword);
+        user.setPassword(bCryptPasswordEncoder.encode(request.getNewPassword()));
         userProfileRepository.save(user);
+        confirmationCodeRepository.deleteByUser_Username(user.getUsername());
 
         return Pair.of(true, "Password reset was successful.");
     }
@@ -77,6 +82,9 @@ public class ResetPasswordService {
         }
         if (confirmationCode.isConfirmed()) {
             return Pair.of(false, "Request not valid.");
+        }
+        if (confirmationCode.getExpiresAt().isBefore(LocalDateTime.now())) {
+            return Pair.of(false, "Code has expired. Please request a new password reset.");
         }
         if (bCryptPasswordEncoder.matches(enteredConfirmCode, confirmationCode.getCode())) {
             confirmationCode.setConfirmed(true);
@@ -146,74 +154,99 @@ public class ResetPasswordService {
     }
 
     private String buildEmail(String email, String confirmCode) {
-
-        UserProfile user = userProfileRepository.findUserProfileByUsername(email).orElseThrow(() -> new UsernameNotFoundException(String.format(USER_NOT_FOUND, email)));
-
-        return "<div style=\"font-family:Helvetica,Arial,sans-serif;font-size:16px;margin:0;color:#0b0c0c\">\n" +
-                "\n" +
-                "<span style=\"display:none;font-size:1px;color:#fff;max-height:0\"></span>\n" +
-                "\n" +
-                "  <table role=\"presentation\" width=\"100%\" style=\"border-collapse:collapse;min-width:100%;width:100%!important\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n" +
-                "    <tbody><tr>\n" +
-                "      <td width=\"100%\" height=\"53\" bgcolor=\"#0b0c0c\">\n" +
-                "        \n" +
-                "        <table role=\"presentation\" width=\"100%\" style=\"border-collapse:collapse;max-width:580px\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\">\n" +
-                "          <tbody><tr>\n" +
-                "            <td width=\"70\" bgcolor=\"#0b0c0c\" valign=\"middle\">\n" +
-                "                <table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse:collapse\">\n" +
-                "                  <tbody><tr>\n" +
-                "                    <td style=\"padding-left:10px\">\n" +
-                "                  \n" +
-                "                    </td>\n" +
-                "                    <td style=\"font-size:28px;line-height:1.315789474;Margin-top:4px;padding-left:10px\">\n" +
-                "                      <span style=\"font-family:Helvetica,Arial,sans-serif;font-weight:700;color:#ffffff;text-decoration:none;vertical-align:top;display:inline-block\">Reset your password</span>\n" +
-                "                    </td>\n" +
-                "                  </tr>\n" +
-                "                </tbody></table>\n" +
-                "              </a>\n" +
-                "            </td>\n" +
-                "          </tr>\n" +
-                "        </tbody></table>\n" +
-                "        \n" +
-                "      </td>\n" +
-                "    </tr>\n" +
-                "  </tbody></table>\n" +
-                "  <table role=\"presentation\" class=\"m_-6186904992287805515content\" align=\"center\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse:collapse;max-width:580px;width:100%!important\" width=\"100%\">\n" +
-                "    <tbody><tr>\n" +
-                "      <td width=\"10\" height=\"10\" valign=\"middle\"></td>\n" +
-                "      <td>\n" +
-                "        \n" +
-                "                <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse:collapse\">\n" +
-                "                  <tbody><tr>\n" +
-                "                    <td bgcolor=\"#1D70B8\" width=\"100%\" height=\"10\"></td>\n" +
-                "                  </tr>\n" +
-                "                </tbody></table>\n" +
-                "        \n" +
-                "      </td>\n" +
-                "      <td width=\"10\" valign=\"middle\" height=\"10\"></td>\n" +
-                "    </tr>\n" +
-                "  </tbody></table>\n" +
-                "\n" +
-                "\n" +
-                "\n" +
-                "  <table role=\"presentation\" class=\"m_-6186904992287805515content\" align=\"center\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse:collapse;max-width:580px;width:100%!important\" width=\"100%\">\n" +
-                "    <tbody><tr>\n" +
-                "      <td height=\"30\"><br></td>\n" +
-                "    </tr>\n" +
-                "    <tr>\n" +
-                "      <td width=\"10\" valign=\"middle\"><br></td>\n" +
-                "      <td style=\"font-family:Helvetica,Arial,sans-serif;font-size:19px;line-height:1.315789474;max-width:560px\">\n" +
-                "        \n" +
-                "            <p style=\"Margin:0 0 20px 0;font-size:19px;line-height:25px;color:#0b0c0c\">Hello " + user.getFirstName() + " " + user.getLastName() + ",</p><p style=\"Margin:0 0 20px 0;font-size:19px;line-height:25px;color:#0b0c0c\">We're sending you this email because you requested a password reset. Use the following code to reset your password: </p><blockquote style=\"Margin:0 0 20px 0;border-left:10px solid #b1b4b6;padding:15px 0 0.1px 15px;font-size:19px;line-height:25px\">" + confirmCode + "</p></blockquote>\nThis code will expire in 15 minutes. <p style=\"margin-bottom: 0\"> If you didn't request a password reset, you can ignore this email. Your password will not be changed.<p style=\"margin-bottom: 0\">Dear regards</p><p style=\"margin: 0\">The Edurando Team</p>" +
-                "        \n" +
-                "      </td>\n" +
-                "      <td width=\"10\" valign=\"middle\"><br></td>\n" +
-                "    </tr>\n" +
-                "    <tr>\n" +
-                "      <td height=\"30\"><br></td>\n" +
-                "    </tr>\n" +
-                "  </tbody></table><div class=\"yj6qo\"></div><div class=\"adL\">\n" +
-                "\n" +
-                "</div></div>";
+        UserProfile user = userProfileRepository.findUserProfileByUsername(email)
+                .orElseThrow(() -> new UsernameNotFoundException(String.format(USER_NOT_FOUND, email)));
+        return RESET_EMAIL_TEMPLATE
+                .replace("{firstName}", user.getFirstName())
+                .replace("{lastName}",  user.getLastName())
+                .replace("{code}",      confirmCode);
     }
+
+    private static final String RESET_EMAIL_TEMPLATE = """
+        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+        <html lang="en">
+        <head>
+          <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1.0">
+          <title>Reset your Password</title>
+        </head>
+        <body style="margin:0;padding:0;background-color:#0c0a1e;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,sans-serif;">
+
+          <span style="display:none;font-size:1px;color:#0c0a1e;max-height:0;overflow:hidden;">
+            Your Edurando password reset code is inside.
+          </span>
+
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"
+                 style="background-color:#0c0a1e;padding:48px 16px;">
+            <tr>
+              <td align="center">
+
+                <table cellpadding="0" cellspacing="0" border="0" role="presentation"
+                       style="width:100%;max-width:560px;background-color:#12102a;border-radius:16px;border:1px solid #2a1f5e;overflow:hidden;">
+
+                  <!-- Header -->
+                  <tr>
+                    <td align="center"
+                        style="padding:36px 48px 30px;text-align:center;background-color:#7c3aed;background-image:linear-gradient(135deg,#6366f1 0%,#8b5cf6 60%,#a855f7 100%);">
+                      <p style="margin:0 0 4px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.65);letter-spacing:0.12em;text-transform:uppercase;">EDURANDO</p>
+                      <h1 style="margin:0;font-size:26px;font-weight:700;color:#ffffff;line-height:1.25;">Reset your Password</h1>
+                    </td>
+                  </tr>
+
+                  <!-- Body -->
+                  <tr>
+                    <td style="padding:40px 48px 36px;">
+
+                      <p style="margin:0 0 20px;font-size:20px;font-weight:600;color:#ede9fe;line-height:1.3;">
+                        Hello {firstName} {lastName},
+                      </p>
+                      <p style="margin:0 0 28px;font-size:15px;line-height:1.7;color:#c4b5fd;">
+                        We received a request to reset your Edurando password. Use the code below to continue. It expires in <span style="color:#ede9fe;font-weight:600;">15&nbsp;minutes</span>.
+                      </p>
+
+                      <!-- Code block -->
+                      <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
+                        <tr>
+                          <td align="center" style="padding-bottom:32px;">
+                            <div style="display:inline-block;background-color:#1a1836;border:2px solid #4c3d8a;border-radius:16px;padding:20px 48px;">
+                              <span style="font-family:'Courier New',Courier,monospace;font-size:42px;font-weight:700;color:#ede9fe;letter-spacing:0.18em;">{code}</span>
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%">
+                        <tr>
+                          <td style="border-top:1px solid #2a1f5e;padding-top:24px;">
+                            <p style="margin:0 0 6px;font-size:13px;color:#7c6db8;line-height:1.6;">
+                              If you didn&#x2019;t request a password reset, you can safely ignore this email.
+                            </p>
+                            <p style="margin:0;font-size:13px;color:#7c6db8;line-height:1.6;">
+                              Your password will <span style="color:#c4b5fd;font-weight:600;">not</span> be changed unless you use this code.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td align="center"
+                        style="background-color:#0c0a1e;border-top:1px solid #1a1836;padding:18px 48px;text-align:center;">
+                      <p style="margin:0;font-size:12px;color:#7c6db8;">
+                        &copy; 2024 Edurando &mdash; The learning platform for students
+                      </p>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+
+        </body>
+        </html>
+        """;
 }

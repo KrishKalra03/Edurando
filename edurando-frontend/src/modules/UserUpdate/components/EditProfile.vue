@@ -120,78 +120,96 @@
         </div>
     </div>
 <Footer></Footer>
+
+<CropModal
+  v-if="showCrop"
+  :imageSrc="pendingImgSrc"
+  @apply="onCropApply"
+  @cancel="showCrop = false"
+/>
 </template>
 
 <script setup>
-import {onMounted, reactive, ref, watch} from "vue";
-import axios from "axios";
-import {useUserStore} from "@/store/store";
-import router from "@/router";
-import EditPage from "@/modules/UserUpdate/EditPage.vue";
-import Footer from "@/modules/Footer/Footer.vue";
+import { computed, reactive, ref } from "vue"
+import axios from "axios"
+import { useUserStore } from "@/store/store"
+import router from "@/router"
+import EditPage from "@/modules/UserUpdate/EditPage.vue"
+import Footer from "@/modules/Footer/Footer.vue"
+import CropModal from "@/components/CropModal.vue"
+import { getProfileImageSrc } from "@/composables/useProfileImage"
 
-const userStore = useUserStore();
+const userStore = useUserStore()
 
 const user = reactive({
-    id: userStore.getUser.id,
-    firstName: userStore.getUser.firstName,
-    lastName: userStore.getUser.lastName,
-    gender: userStore.getUser.gender,
-    role: userStore.getUser.role,
-    personalBiography: userStore.getUser.personalBiography,
-    mobile: userStore.getUser.mobile,
-    street: userStore.getUser.address.street,
-    houseNumber: userStore.getUser.address.houseNumber,
-    city: userStore.getUser.address.city,
-    state: userStore.getUser.address.state,
-    postCode: userStore.getUser.address.postCode !== -1 ? userStore.getUser.address.postCode : ''
+    id:               userStore.getUser.id,
+    firstName:        userStore.getUser.firstName,
+    lastName:         userStore.getUser.lastName,
+    gender:           userStore.getUser.gender,
+    role:             userStore.getUser.role,
+    personalBiography:userStore.getUser.personalBiography,
+    mobile:           userStore.getUser.mobile,
+    street:           userStore.getUser.address.street,
+    houseNumber:      userStore.getUser.address.houseNumber,
+    city:             userStore.getUser.address.city,
+    state:            userStore.getUser.address.state,
+    postCode:         userStore.getUser.address.postCode !== -1 ? userStore.getUser.address.postCode : ''
 })
-const image = ref(null)
-const file = ref(null)
 
-onMounted(async () => {
-  // Dynamisches Importieren des Bildes
-  const imageModule = await import(userStore.getUser.profilePictureReference);
-  image.value = imageModule.default
-});
+const localImageOverride = ref(null)
+const image = computed({
+    get: () => localImageOverride.value ?? getProfileImageSrc(userStore.getUser?.profilePictureReference),
+    set: (val) => { localImageOverride.value = val }
+})
+const file          = ref(null)
+const showCrop      = ref(false)
+const pendingImgSrc = ref(null)
 
 async function onEdit() {
     try {
-      const response1 = await axios.put('/updatePersonalData', user)
-      if (file.value !== null) {
-        let formData = new FormData()
-        formData.append('id', user.id)
-        formData.append('file', file.value)
-        const response2 = await axios.post('/upload', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        })
-      }
-      await userStore.fetchUserById(user.id)
-      await router.push('/')
+        await axios.put('/updatePersonalData', user)
+        if (file.value !== null) {
+            const formData = new FormData()
+            formData.append('id', user.id)
+            formData.append('file', file.value)
+            await axios.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+        }
+        await userStore.fetchUserById(user.id)
+        await router.push('/')
     } catch (error) {
-        console.log(error.response.data)
+        console.log(error.response?.data)
     }
 }
 
 function handleFileChange(event) {
-  file.value = event.target.files[0];
+    const selected = event.target.files[0]
+    if (!selected) return
+    // Read as Data URL and open crop modal
+    const reader = new FileReader()
+    reader.onload = e => {
+        pendingImgSrc.value = e.target.result
+        showCrop.value = true
+    }
+    reader.readAsDataURL(selected)
+    // Reset input so selecting the same file again still triggers change
+    event.target.value = ''
+}
 
-  image.value = URL.createObjectURL(file.value)
+function onCropApply(blob) {
+    showCrop.value = false
+    file.value = new File([blob], 'profile.jpg', { type: 'image/jpeg' })
+    image.value = URL.createObjectURL(blob)
 }
 
 async function removeImage() {
-  const imageModule = await import("../../../assets/p_placeholder.png");
-  image.value = imageModule.default
-  try {
-    const response1 = await axios.delete(`/removeImage/?id=${user.id}`)
-    const response2 = await userStore.fetchUserById(user.id)
-    console.log(response1.data)
-
-  } catch (error) {
-    console.error(error)
-  }
+    try {
+        await axios.delete(`/removeImage/?id=${user.id}`)
+        await userStore.fetchUserById(user.id)
+        localImageOverride.value = null
+        file.value  = null
+    } catch (error) {
+        console.error(error)
+    }
 }
 </script>
 

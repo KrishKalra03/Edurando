@@ -1,125 +1,218 @@
 <script setup>
-import {useRouter} from "vue-router";
-import axios from "axios";
-import {onMounted, ref} from "vue";
-import {useEmailStore} from "@/modules/ResetPassword/emailStore";
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
+import { useEmailStore } from '@/modules/ResetPassword/emailStore'
 
-const router = useRouter();
-const emailStore = useEmailStore();
-const result = ref("")
+const router     = useRouter()
+const emailStore = useEmailStore()
+const digits     = ref(['', '', '', ''])
+const inputRefs  = ref([])
+const result     = ref('')
+const loading    = ref(false)
 
-const email = ref(emailStore.email)
-const confirmationNumbers = ref(['', '', '', ''])
+function onInput(index) {
+  const val = digits.value[index]
+  if (!/^\d$/.test(val)) {
+    digits.value[index] = ''
+    return
+  }
+  if (index < 3) inputRefs.value[index + 1]?.focus()
+}
+
+function onKeydown(event, index) {
+  if (event.key === 'Backspace' && !digits.value[index] && index > 0) {
+    inputRefs.value[index - 1]?.focus()
+  }
+}
+
+function onPaste(event) {
+  const pasted = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 4)
+  pasted.split('').forEach((ch, i) => { digits.value[i] = ch })
+  inputRefs.value[Math.min(pasted.length, 3)]?.focus()
+  event.preventDefault()
+}
+
 async function confirmNumber() {
-  console.log(confirmationNumbers.value.join(''))
-  let formData = new FormData();
-  formData.append('email', email.value);
-  formData.append('enteredCode', confirmationNumbers.value.join(''));
+  const code = digits.value.join('')
+  if (code.length < 4) return
+  loading.value = true
+  result.value  = ''
   try {
-  const response = await axios.post('/confirmCode', formData);
-  result.value = response.data;
-  if (result.value) {
-    emailStore.email = email.value;}
-  await router.push('/passwordform');
-  console.log(result.value);
-} catch (error) {
-  result.value = error.request.response;
-  console.log(result.value);
+    const formData = new FormData()
+    formData.append('email', emailStore.email)
+    formData.append('enteredCode', code)
+    await axios.post('/confirmCode', formData)
+    await router.push('/passwordform')
+  } catch (error) {
+    result.value = error.response?.data || 'Invalid code. Please try again.'
+    digits.value = ['', '', '', '']
+    inputRefs.value[0]?.focus()
+  } finally {
+    loading.value = false
+  }
 }
-
-}
-function goBack() {
-
-  router.back()
-}
-
-function handleKeyDown() {
-  const otp = document.querySelectorAll('.input')
-  otp.forEach((field, index) => {
-    field.addEventListener('keydown', (e) => {
-      if (e.key >= 0 && e.key <= 9) {
-        otp[index].value = "";
-        setTimeout(() => {
-          otp[index + 1].focus();
-        }, 4);
-      } else if (e.key === 'Backspace') {
-        setTimeout(() => {
-          otp[index - 1].focus()
-        }, 4)
-      }
-    })
-  })
-
-}
-
-onMounted(() => {
-  handleKeyDown()
-})
-
-/*const otp = document.querySelectorAll('.input')
-otp[0].focus();
-otp.forEach((field, index) => {
-  field.addEventListener('keydown', (e) => {
-    if (e.key >= 0 && e.key <= 9) {
-      otp[index].value = "";
-      setTimeout(() => {
-        otp[index + 1].focus();
-      }, 4);
-    } else if (e.key === 'Backspace') {
-      setTimeout(() => {
-        otp[index - 1].focus()
-      }, 4)
-    }
-  })
-})*/
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-100 dark:bg-[#181818] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 mt-10">
-    <div class="max-w-md w-full space-y-8">
-      <div class="border border-white bg-white rounded-md p-8">
-        <div class="bg-white rounded-md pt-8">
-          <h2 class="mt-4 text-center text-3xl font-extrabold text-gray-900 dark:text-[#b5a9fc]">
-            Confirm Number
-          </h2>
-          <p class="mt-2 text-center text-gray-600 dark:text-gray-400">
-            Please enter the number you received via {{ emailStore.email }} to confirm.
-          </p>
-        </div>
-        <form class="" @submit.prevent="confirmNumber" autocomplete="off">
-          <div class="flex justify-center items-center my-[15px]">
-            <input v-for="(_, index) in confirmationNumbers" :key="index" type="number" min="0" max="9" placeholder="0" v-model="confirmationNumbers[index]" required onpaste="false"
-                   class="rounded-[5px] text-[60px] h-[100px] w-[100px] border-[3px] border-[#cacaca] m-[1%] text-center font-semibold outline-none valid:border-purple-500 valid:shadow-1.5xl input">
-          </div>
-            <div class="flex justify-between">
-              <button type="submit"
-                      class="w-1/2 flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-purple-500 bg-transparent hover:bg-purple-100 dark:hover:bg-[#26233b] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
-                Confirm
-              </button>
-              <button @click="goBack" type="button"
-                      class="w-1/2 flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-gray-500 bg-transparent hover:bg-gray-100 dark:hover:bg-[#26233b] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
-                Back
-              </button>
-            </div>
-          <p v-if="result" class="text-red-500 text-xs">{{result}}</p>
-        </form>
+  <div class="page">
+    <div class="card">
+
+      <div class="icon-wrap">
+        <svg viewBox="0 0 48 48" fill="none" aria-hidden="true" width="52" height="52">
+          <rect width="48" height="48" rx="14" fill="url(#otpGrad)"/>
+          <path d="M24 10a10 10 0 0 0-10 10v2h-2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h24a2 2 0 0 0 2-2V24a2 2 0 0 0-2-2h-2v-2a10 10 0 0 0-10-10z" stroke="white" stroke-width="2" fill="none"/>
+          <circle cx="24" cy="28" r="2.5" fill="white"/>
+          <defs>
+            <linearGradient id="otpGrad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+              <stop offset="0%"   stop-color="#6366f1"/>
+              <stop offset="60%"  stop-color="#8b5cf6"/>
+              <stop offset="100%" stop-color="#a855f7"/>
+            </linearGradient>
+          </defs>
+        </svg>
       </div>
+
+      <h1 class="title">Enter Code</h1>
+      <p class="subtitle">
+        We sent a 4-digit code to<br>
+        <span class="email-highlight">{{ emailStore.email }}</span>
+      </p>
+
+      <form @submit.prevent="confirmNumber">
+        <div class="otp-row">
+          <input
+            v-for="(_, i) in digits"
+            :key="i"
+            :ref="el => { if (el) inputRefs[i] = el }"
+            v-model="digits[i]"
+            @input="onInput(i)"
+            @keydown="onKeydown($event, i)"
+            @paste="onPaste"
+            type="text"
+            inputmode="numeric"
+            maxlength="1"
+            class="otp-box"
+            autocomplete="off"
+          />
+        </div>
+
+        <button type="submit" class="btn-primary" :disabled="loading || digits.join('').length < 4">
+          <span v-if="loading" class="spinner"></span>
+          <span v-else>Verify Code</span>
+        </button>
+
+        <p v-if="result" class="error">{{ result }}</p>
+      </form>
+
     </div>
   </div>
-
-
-
 </template>
 
 <style scoped>
-.input::-webkit-inner-spin-button,
-.input::-webkit-outer-spin-button{
-  -webkit-appearance: none;
-  margin: 0;
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--bg-base);
 }
 
-@media screen and (max-width: 475px) {
-  
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 20px;
+  padding: 48px 44px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-elevated);
 }
 
+.icon-wrap { display: flex; justify-content: center; margin-bottom: 24px; }
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 10px;
+}
+
+.subtitle {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin: 0 0 32px;
+}
+
+.email-highlight {
+  color: var(--text-primary);
+  font-weight: 600;
+  word-break: break-all;
+}
+
+/* ── OTP ─────────────────────────────────── */
+.otp-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.otp-box {
+  width: 64px;
+  height: 72px;
+  border-radius: 14px;
+  border: 2px solid var(--border-default);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  caret-color: transparent;
+}
+.otp-box:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139,92,246,0.15);
+}
+
+/* ── Button ──────────────────────────────── */
+.btn-primary {
+  width: 100%;
+  padding: 13px;
+  background: var(--gradient-brand);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+}
+.btn-primary:hover:not(:disabled)  { opacity: 0.88; transform: translateY(-1px); }
+.btn-primary:active:not(:disabled) { transform: scale(0.97); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.error {
+  font-size: 13px;
+  color: #f87171;
+  margin-top: 14px;
+}
 </style>

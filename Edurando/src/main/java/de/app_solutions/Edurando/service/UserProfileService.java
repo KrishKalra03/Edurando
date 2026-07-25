@@ -40,7 +40,6 @@ public class UserProfileService implements UserDetailsService {
     private final ConfirmationTokenService confirmationTokenService;
     private final UserProfileDTOMapper userProfileDTOMapper;
 
-    @Autowired
     private PasswordEncoder passwordEncoder;
     private EditPasswordRequest pwRequest;
 

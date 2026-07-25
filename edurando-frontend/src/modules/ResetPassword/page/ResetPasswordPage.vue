@@ -1,74 +1,178 @@
 <script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
+import { useEmailStore } from '@/modules/ResetPassword/emailStore'
 
-import {onBeforeMount, onMounted, reactive, ref} from "vue";
-import {useRouter} from "vue-router";
-import axios from "axios";
-import {useEmailStore} from "@/modules/ResetPassword/emailStore";
-
-const router = useRouter();
-const result = ref("");
-const email = ref("");
-const emailStore = useEmailStore();
-// const email = ref(emailStore.email)
+const router     = useRouter()
+const emailStore = useEmailStore()
+const email      = ref('')
+const result     = ref('')
+const loading    = ref(false)
 
 async function sendEmail() {
+  loading.value = true
+  result.value  = ''
   try {
-    let formData = new FormData();
-    formData.append('email', email.value);
-    const response = await axios.post('/forgotPassword', formData);
-    result.value = response.data;
-    if (result.value) {
-      emailStore.email = email.value;}
-    await router.push('/confirmNumber');
-    console.log(result.value);
+    const formData = new FormData()
+    formData.append('email', email.value)
+    await axios.post('/forgotPassword', formData)
+    emailStore.email = email.value
+    await router.push('/confirmNumber')
   } catch (error) {
-    result.value = error.request.response;
-    console.log(result.value);
+    result.value = error.response?.data || 'Something went wrong. Please try again.'
+  } finally {
+    loading.value = false
   }
-}function goBack() {
-  router.back()
 }
-
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-100 dark:bg-[#181818] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 mt-10">
-    <div class="max-w-md w-full space-y-8">
-      <div class="border border-white bg-white rounded-md p-8">
-        <div class="bg-white rounded-md p-8">
-          <h2 class="mt-4 text-center text-3xl font-extrabold text-gray-900 dark:text-[#b5a9fc]">
-            Find Profile
-          </h2>
-          <p class="mt-2 text-center text-gray-600 dark:text-gray-400">
-            Please enter your email address to reset your password.
-          </p>
-        </div>
-        <form class="mt-3 space-y-6 bg-white rounded-md p-8" @submit.prevent="sendEmail">
-          <div class="rounded-md shadow-sm space-y-2">
-            <div>
-              <label for="email" class="text-black dark:text-[#b5a9fc] font-font-family p-2">E-Mail</label>
-              <input id="email" name="email" type="email"
-                     autocomplete="email" required
-                     class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 dark:bg-[#c6c5d1] dark:border-[#9895ad] dark:text-black focus:outline-none rounded-t-md focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
-                     placeholder="E-Mail" v-model="email" >
-            </div>
-            <div class="flex justify-between">
-              <button  type="submit"
-                      class="w-1/2 flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-purple-500 bg-transparent hover:bg-purple-100 dark:hover:bg-[#26233b] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
-                Send E-Mail
-              </button>
-              <button @click="goBack" type="button"
-                      class="w-1/2 flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-gray-500 bg-transparent hover:bg-gray-100 dark:hover:bg-[#26233b] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
-                Back
-              </button>
-            </div>
-          </div>
-          <p v-if="result" class="text-red-500 text-xs">{{result}}</p>
-        </form>
+  <div class="page">
+    <div class="card">
+
+      <div class="icon-wrap">
+        <svg viewBox="0 0 48 48" fill="none" aria-hidden="true" width="52" height="52">
+          <rect width="48" height="48" rx="14" fill="url(#rpGrad)"/>
+          <rect x="10" y="18" width="28" height="20" rx="3" stroke="white" stroke-width="2"/>
+          <path d="M10 21l14 10 14-10" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <path d="M24 6v8M20 10l4-4 4 4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="rpGrad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+              <stop offset="0%"   stop-color="#6366f1"/>
+              <stop offset="60%"  stop-color="#8b5cf6"/>
+              <stop offset="100%" stop-color="#a855f7"/>
+            </linearGradient>
+          </defs>
+        </svg>
       </div>
+
+      <h1 class="title">Reset Password</h1>
+      <p class="subtitle">Enter your email address and we'll send you a verification code.</p>
+
+      <form @submit.prevent="sendEmail" class="form">
+        <div class="field">
+          <label for="rp-email">Email address</label>
+          <input
+            id="rp-email"
+            v-model="email"
+            type="email"
+            required
+            autocomplete="email"
+            placeholder="you@example.com"
+          />
+        </div>
+
+        <button type="submit" class="btn-primary" :disabled="loading">
+          <span v-if="loading" class="spinner"></span>
+          <span v-else>Send Code</span>
+        </button>
+
+        <p v-if="result" class="error">{{ result }}</p>
+      </form>
+
     </div>
   </div>
 </template>
 
 <style scoped>
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--bg-base);
+}
+
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 20px;
+  padding: 48px 44px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-elevated);
+}
+
+.icon-wrap { display: flex; justify-content: center; margin-bottom: 24px; }
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 10px;
+}
+
+.subtitle {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0 0 32px;
+}
+
+.form { text-align: left; display: flex; flex-direction: column; gap: 20px; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+input {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139,92,246,0.12);
+}
+input::placeholder { color: var(--text-muted); }
+
+.btn-primary {
+  width: 100%;
+  padding: 13px;
+  background: var(--gradient-brand);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+}
+.btn-primary:hover:not(:disabled)  { opacity: 0.88; transform: translateY(-1px); }
+.btn-primary:active:not(:disabled) { transform: scale(0.97); }
+.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.error {
+  font-size: 13px;
+  color: #f87171;
+  text-align: center;
+  margin: 0;
+}
 </style>

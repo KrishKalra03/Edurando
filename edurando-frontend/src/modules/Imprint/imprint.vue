@@ -1,109 +1,95 @@
 <template>
-  <div class="min-h-screen dark:bg-[#181818] bg-gray-100 py-12 sm:px-6 lg:px-8">
-    <div class="w-full space-y-8">
-      <div>
-        <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white">Imprint</h1>
+  <div class="min-h-screen pt-24 pb-16 px-4 sm:px-6 lg:px-8" style="background: var(--bg-base)">
+    <div class="max-w-3xl mx-auto">
+
+      <!-- Header -->
+      <div class="mb-12">
+        <p class="text-xs font-semibold uppercase tracking-widest mb-2" style="color: var(--text-muted)">Legal</p>
+        <h1 class="text-4xl font-extrabold mb-3" style="color: var(--text-primary)">Imprint</h1>
+        <p class="text-sm" style="color: var(--text-muted)">Information according to § 5 TMG</p>
+        <div class="mt-6 h-px" style="background: var(--border-subtle)"></div>
       </div>
 
-      <div class="flex space-x-8">
-        <div class="flex-1">
-          <div class="text-black mt-4 dark:text-white">
-            <p class="text-lg font-medium">Edurando AG</p>
-            <p class="text-lg font-medium">D-20095 Hamburg</p>
-            <p class="text-lg font-medium mb-4">Telefon: +49 - 12 - 34 56*</p>
-            <p class="text-lg">(Mo-Fr: 08:00 Uhr - 17:00 Uhr)</p>
-            <p class="text-lg"> E-Mail: xedurando@gmail.com​*</p>
-            <p class="text-lg">Internet: edurando.de</p>
-          </div>
-        </div>
+      <div class="space-y-10">
 
-        <div class="flex-1">
-          <div class="mt-8 text-black dark:text-white">
-            <h3 class="text-xl font-bold mb-2">Sitz der Gesellschaft</h3>
-            <p class="text-lg">Edurando AG</p>
-            <p class="text-lg">Edurandostr. 24</p>
-            <p class="text-lg">22546 Hamburg</p>
-            <p class="text-lg">Deutschland</p>
+        <section>
+          <h2 class="section-title">Responsible for content</h2>
+          <div class="p-5 rounded-xl" style="background: var(--bg-surface); border: 1px solid var(--border-subtle)">
+            <p class="font-semibold text-base mb-1" style="color: var(--text-primary)">Krish Kalra</p>
+            <p style="color: var(--text-secondary)">Holzhäuser 16d</p>
+            <p style="color: var(--text-secondary)">21079 Hamburg</p>
+            <p style="color: var(--text-secondary)">Germany</p>
           </div>
-        </div>
+        </section>
+
+        <section>
+          <h2 class="section-title">Contact</h2>
+          <div class="p-5 rounded-xl space-y-1" style="background: var(--bg-surface); border: 1px solid var(--border-subtle)">
+            <a href="mailto:kontakt@devvault.de" class="text-link block">kontakt@devvault.de</a>
+            <a href="tel:+4915679818930" class="text-link block">+49 15679 818930</a>
+          </div>
+        </section>
+
+        <section>
+          <h2 class="section-title">Disclaimer</h2>
+          <div class="space-y-6">
+            <div>
+              <h3 class="subsection-title">Liability for content</h3>
+              <p style="color: var(--text-secondary)">
+                The contents of this platform have been created with the utmost care. However, we cannot
+                guarantee the accuracy, completeness, or timeliness of the content. As a service provider,
+                we are responsible for our own content on this platform under general law. However, we are
+                not obligated to monitor transmitted or stored third-party information or to investigate
+                circumstances that indicate illegal activity.
+              </p>
+            </div>
+            <div>
+              <h3 class="subsection-title">Liability for links</h3>
+              <p style="color: var(--text-secondary)">
+                Our platform contains links to external third-party websites over whose content we have no
+                influence. We therefore cannot accept any liability for this external content. The respective
+                provider or operator of the linked pages is always responsible for their content.
+              </p>
+            </div>
+            <div>
+              <h3 class="subsection-title">Copyright</h3>
+              <p style="color: var(--text-secondary)">
+                The content and works created by the site operator on this platform are subject to German
+                copyright law. Reproduction, editing, distribution, or any kind of use beyond the limits of
+                copyright law requires the written consent of the respective author or creator.
+              </p>
+            </div>
+          </div>
+        </section>
+
       </div>
-
-      <div class="flex space-x-8">
-        <div class="flex-1">
-          <div class="mt-8 text-black dark:text-white">
-            <h3 class="text-xl font-bold mb-2">Vorstand</h3>
-            <p class="text-lg">Herr Ahmed Radwan</p>
-            <p class="text-lg">Herr Altin Rushiti</p>
-            <p class="text-lg">Herr Bennet Gurklies</p>
-            <p class="text-lg">Herr Ghamdan Al-Sofey</p>
-            <p class="text-lg">Herr Krish Kalra</p>
-            <p class="text-lg">Frau Sena Demircik</p>
-            <p class="text-lg">Herr Zainoul Abidine Barry</p>
-          </div>
-        </div>
-
-        <div class="flex-1">
-          <div class="mt-8 text-black dark:text-white">
-            <h3 class="text-xl font-bold mb-2">Vorstand</h3>
-            <p class="text-lg">Herr Ahmed Radwan</p>
-            <p class="text-lg">Herr Altin Rushiti</p>
-            <p class="text-lg">Herr Bennet Gurklies</p>
-            <p class="text-lg">Herr Ghamdan Al-Sofey</p>
-            <p class="text-lg">Herr Krish Kalra</p>
-            <p class="text-lg">Frau Sena Demircik</p>
-            <p class="text-lg">Herr Zainoul Abidine Barry</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex space-x-8">
-        <div class="flex-1">
-          <div class="mt-8 text-black dark:text-white">
-            <h3 class="text-xl font-bold mb-4">Rechtliche Hinweise</h3>
-            <p class="text-lg mb-4">Edurando übernimmt keine Gewähr für die Aktualität,
-              Richtigkeit und Vollständigkeit der bereitgestellten Informationen
-              und Inhalte auf der Plattform.
-              Edurando haftet nicht für Schäden oder Verluste,
-              die sich aus der Nutzung der Plattform ergeben könnten.</p>
-            <p class="text-lg mb-4">Edurando ist nicht verantwortlich für den
-              Inhalt von Websites Dritter, auf die über Hyperlinks auf der
-              Plattform zugegriffen werden kann. Die Verantwortung für den
-              Inhalt dieser verlinkten Websites liegt allein bei den jeweiligen Betreibern.</p>
-            <p class="text-lg mb-4">Die Inhalte und das Design der Edurando-Plattform
-              sind urheberrechtlich geschützt.
-              Eine Vervielfältigung, Verbreitung oder sonstige Nutzung der Inhalte
-              und Materialien auf der Plattform bedarf der vorherigen schriftlichen
-              Zustimmung von Edurando.</p>
-          </div>
-        </div>
-
-        <div class="flex-1">
-          <div class="mt-8 text-black dark:text-white">
-            <p class="text-lg mb-4 pt-11">Edurando übernimmt keine Verantwortung für Inhalte,
-              die von Benutzern der Plattform generiert werden, einschließlich Bewertungen oder Kommentaren.
-              Die Meinungen und Ansichten, die in solchen nutzergenerierten Inhalten zum Ausdruck gebracht werden,
-              stellen nicht notwendigerweise die Ansichten von Edurando dar.</p>
-            <p class="text-lg mb-4">Die angebotene Nachhilfe wird von unabhängigen Lehrkräften erbracht,
-              die nicht im direkten Auftrag von Edurando handeln. Für die Dienstleistungen der Lehrkräfte gelten
-              deren eigene Geschäftsbedingungen. Edurando übernimmt keine Gewährleistung oder Garantie für die
-              Dienstleistungen der Lehrkräfte und ist nicht haftbar für eventuelle Streitigkeiten oder Schäden,
-              die sich aus der Beziehung zwischen den Benutzern und den Lehrkräften ergeben.</p>
-          </div>
-        </div>
-      </div>
-
     </div>
   </div>
+  <Footer />
 </template>
 
-<script>
-export default {
-  name: "imprint"
-}
+<script setup>
+import Footer from "@/modules/Footer/Footer.vue"
 </script>
 
 <style scoped>
-h1 {
-  margin-top: 5%;
+.section-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+.subsection-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.text-link {
+  color: #8b5cf6;
+  text-decoration: none;
+}
+.text-link:hover {
+  text-decoration: underline;
 }
 </style>

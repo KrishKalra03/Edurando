@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.util.Pair;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Random;
 
 @SpringBootApplication
+@EnableAsync
 public class EdurandoApplication {
 
 
@@ -27,7 +29,7 @@ public class EdurandoApplication {
     }
 
 
-    public Pair<List<Subject>, List<Topic>> randomSubjectTopic() {
+    /*public Pair<List<Subject>, List<Topic>> randomSubjectTopic() {
         Random random = new Random();
         List<UserProfile> userProfiles = new ArrayList<>();
         List<Subject> subjects = new ArrayList<>();
@@ -79,7 +81,7 @@ public class EdurandoApplication {
             userProfileService.signUpUser(new UserProfile("Student", "Krish", "Kalra", "krish.kalra1@stud.th-luebeck.de", "Test_123", true));
             userProfileService.signUpUser(new UserProfile("Student", "Krish", "Kalra", "krish.kalra2@stud.th-luebeck.de", "Test_123", true));
             userProfileService.signUpUser(new UserProfile("Student", "Krish", "Kalra", "krish.kalra3@stud.th-luebeck.de", "Test_123", true));
-            //userProfileService.signUpUser(new UserProfile("Teacher", "Krish", "Kalra", "krish.kalra@stud.th-luebeck.de", "Test_123", true, randomSubjectTopic().getFirst(), randomSubjectTopic().getSecond(), 5.0f, "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam"));
+            userProfileService.signUpUser(new UserProfile("Teacher", "Krish", "Kalra", "krish.kalra@stud.th-luebeck.de", "Test_123", true, randomSubjectTopic().getFirst(), randomSubjectTopic().getSecond(), 5.0f, "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam"));
             userProfileService.signUpUser(new UserProfile("Teacher", "Altin", "Rushiti", "altin.rushiti@stud.th-luebeck.de", "Test_123", true, randomSubjectTopic().getFirst(), randomSubjectTopic().getSecond(), 4.0f, "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam"));
             userProfileService.signUpUser(new UserProfile("Teacher", "Zainoul", "Barry", "zainoul.barry@stud.th-luebeck.de", "Test_123", true, randomSubjectTopic().getFirst(), randomSubjectTopic().getSecond(), 4.0f, "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam"));
             userProfileService.signUpUser(new UserProfile("Teacher", "Bennet", "Gurklies", "bennet.gurklies@stud.th-luebeck.de", "Test_123", true, randomSubjectTopic().getFirst(), randomSubjectTopic().getSecond(), 4.0f, "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam"));
@@ -92,6 +94,6 @@ public class EdurandoApplication {
             userProfileService.signUpUser(new UserProfile("Teacher", "Emily", "Jones", "Emily.Jones@stud.th-luebeck.de", "Test_123", true, randomSubjectTopic().getFirst(), randomSubjectTopic().getSecond(), 5.0f, "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam"));
             userProfileService.signUpUser(new UserProfile("Teacher", "William", "Brown", "William.Brown@stud.th-luebeck.de", "Test_123", true, randomSubjectTopic().getFirst(), randomSubjectTopic().getSecond(), 4.0f, "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam"));
         };
-    }
+    }*/
 }
 

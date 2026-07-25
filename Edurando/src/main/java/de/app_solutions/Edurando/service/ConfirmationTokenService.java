@@ -25,6 +25,10 @@ public class ConfirmationTokenService {
         return confirmationTokenRepository.findByToken(token);
     }
 
+    public void deleteByUsername(String username) {
+        confirmationTokenRepository.deleteByUser_Username(username);
+    }
+
 
 
 }

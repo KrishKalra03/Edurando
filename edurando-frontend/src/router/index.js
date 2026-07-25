@@ -8,6 +8,8 @@ import SubjectsTopic from "@/modules/UserUpdate/components/SubjectsTopic.vue";
 import Login from "@/modules/Login/components/Login.vue";
 import SubjectsTopicSave from "@/modules/UserUpdate/components/SubjectsTopicSave.vue";
 import {useUserStore} from "@/store/store";
+import {useEmailStore} from "@/modules/Registration/emailStore";
+import {useEmailStore as useResetEmailStore} from "@/modules/ResetPassword/emailStore";
 import NotFound from "@/view/NotFound.vue";
 import Chat from "@/modules/Chat/Page/Chat.vue";
 import Imprint from "@/modules/Imprint/imprint.vue";
@@ -15,8 +17,10 @@ import Search from "@/view/Search.vue";
 import ResetPasswordPage from "@/modules/ResetPassword/page/ResetPasswordPage.vue";
 import ConfirmationPage from "@/modules/ResetPassword/page/ConfirmationPage.vue";
 import PasswordForm from "@/modules/ResetPassword/page/PasswordForm.vue";
+import VerificationSuccess from "@/view/VerificationSuccess.vue";
+import TermsOfService from "@/view/TermsOfService.vue";
+import PrivacyPolicy from "@/view/PrivacyPolicy.vue";
 
-const userStore = async () => await useUserStore()
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -37,12 +41,14 @@ const router = createRouter({
         {
             path: '/register',
             name: 'register',
-            component: RegistrationPage
+            component: RegistrationPage,
+            meta: { guestOnly: true }
         },
         {
             path: '/confirm',
             name: 'confirm',
             component: Confirmation,
+            meta: { needsEmail: true, guestOnly: true }
         },
         {
             path: '/editProfile',
@@ -71,7 +77,8 @@ const router = createRouter({
         {
             path: '/login',
             name: 'login',
-            component: Login
+            component: Login,
+            meta: { guestOnly: true }
         },
         {
             path: '/SubjectsTopicSave',
@@ -102,33 +109,57 @@ const router = createRouter({
             path: '/reset-password',
             name: 'reset-password',
             component: ResetPasswordPage,
+            meta: { guestOnly: true }
         },
         {
             path: '/confirmNumber',
             name: 'Confirmation-Number',
             component: ConfirmationPage,
-
+            meta: { needsResetEmail: true, guestOnly: true }
         },
         {
             path: '/passwordform',
             name: 'Password-Form',
             component: PasswordForm,
-
-        }
+            meta: { needsResetEmail: true, guestOnly: true }
+        },
+        {
+            path: '/verify',
+            name: 'verify',
+            component: VerificationSuccess,
+        },
+        {
+            path: '/TermsOfService',
+            name: 'terms-of-service',
+            component: TermsOfService,
+        },
+        {
+            path: '/PrivacyPolicy',
+            name: 'privacy-policy',
+            component: PrivacyPolicy,
+        },
 
     ]
 })
 
-router.beforeEach(async (to, from, next) => {
-    const isLogged = userStore.getUser !== null
+router.beforeEach((to, from, next) => {
+    const store          = useUserStore()
+    const emailStore     = useEmailStore()
+    const resetEmailStore = useResetEmailStore()
+    const token          = localStorage.getItem('token')
+    const isLoggedIn     = !store.isLoggedOut && !!token
 
-    if (to.meta.needsAuth && !isLogged) {
-        next('/login');
-
+    if (to.meta.guestOnly && isLoggedIn) {
+        next('/')
+    } else if (to.meta.needsAuth && !isLoggedIn) {
+        next('/login')
+    } else if (to.meta.needsEmail && !emailStore.email) {
+        next('/register')
+    } else if (to.meta.needsResetEmail && !resetEmailStore.email) {
+        next('/reset-password')
     } else {
-        next();
+        next()
     }
-
 })
 
 export default router
