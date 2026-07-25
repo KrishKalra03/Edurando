@@ -29,3 +29,6 @@ coverage
 
 # Secrets
 .env
+
+# User uploads
+src/assets/profilePictures/
