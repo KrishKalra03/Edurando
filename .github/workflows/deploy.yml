@@ -3,6 +3,7 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 env:
   BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/edurando-backend
