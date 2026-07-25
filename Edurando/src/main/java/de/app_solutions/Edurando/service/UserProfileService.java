@@ -116,11 +116,7 @@ public class UserProfileService implements UserDetailsService {
         if (user.isEmpty()) {
             return Pair.of(false, String.format(USER_NOT_FOUND_BY_ID, id));
         }
-        String currentWorkingDirectory = System.getProperty("user.dir");
-        File sourceFolder = new File(currentWorkingDirectory);
-        String absolutePath = sourceFolder.getAbsolutePath();
-
-        String folderPath = absolutePath + "/" + UPLOAD_DIR + id;
+        String folderPath = UPLOAD_DIR + id;
 
         // Erstelle das Verzeichnis, falls es nicht existiert
         File folder = new File(folderPath);
