@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 env:
-  BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/edurando-backend
-  FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/edurando-frontend
+  BACKEND_IMAGE: ghcr.io/krishkalra03/edurando-backend
+  FRONTEND_IMAGE: ghcr.io/krishkalra03/edurando-frontend
 
 jobs:
   build-backend:
