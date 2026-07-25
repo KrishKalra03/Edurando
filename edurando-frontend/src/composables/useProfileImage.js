@@ -1,11 +1,13 @@
-/**
- * Resolves a profilePictureReference (stored as a relative path like
- * "../../../assets/profilePictures/42/foo.png") to an absolute URL that
- * works in any component regardless of its depth in the src/ tree.
- * Resolution is always done relative to this composable's location (src/composables/).
- */
 export function getProfileImageSrc(profilePictureReference) {
-  const assetsPath = profilePictureReference?.match(/assets\/.+/)?.[0]
+  if (!profilePictureReference) {
+    return new URL('../assets/p_placeholder.png', import.meta.url).href
+  }
+  // Production URL: /api/v1/profileImage/... or absolute http(s)
+  if (profilePictureReference.startsWith('/api/') || profilePictureReference.startsWith('http')) {
+    return profilePictureReference
+  }
+  // Legacy local-dev path: ../../../assets/profilePictures/42/foo.png
+  const assetsPath = profilePictureReference.match(/assets\/.+/)?.[0]
   if (!assetsPath) {
     return new URL('../assets/p_placeholder.png', import.meta.url).href
   }
