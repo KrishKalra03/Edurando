@@ -40,4 +40,5 @@ spec:
             periodSeconds: 20
       volumes:
         - name: uploads
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: edurando-uploads

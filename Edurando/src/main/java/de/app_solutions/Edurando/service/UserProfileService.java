@@ -33,7 +33,7 @@ public class UserProfileService implements UserDetailsService {
 
     protected final static String USER_NOT_FOUND = "User with Email %s was not found.";
     protected final static String USER_NOT_FOUND_BY_ID = "User with id: %s was not found.";
-    protected final static String UPLOAD_DIR  = "../edurando-frontend/src/assets/profilePictures/";
+    protected final static String UPLOAD_DIR  = "/app/uploads/profilePictures/";
     private final UserProfileRepository userProfileRepository;
     private final AddressRepository addressRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
@@ -143,7 +143,7 @@ public class UserProfileService implements UserDetailsService {
                 boolean deleted = Objects.requireNonNull(folder.listFiles())[0].delete();
             }
             Files.write(path, image);
-            user.get().setProfilePictureReference(String.format("../../../assets/profilePictures/%s/%s", id, fileName));
+            user.get().setProfilePictureReference(String.format("/api/v1/profileImage/%s/%s", id, fileName));
             userProfileRepository.save(user.get());
             return Pair.of(true, path.toString());
         } catch (IOException e) {
