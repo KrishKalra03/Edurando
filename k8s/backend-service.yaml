@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: edurando-backend
+  namespace: edurando
+spec:
+  selector:
+    app: edurando-backend
+  ports:
+    - port: 9001
+      targetPort: 9001

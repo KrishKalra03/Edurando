@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: edurando-backend
+  namespace: edurando
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: edurando-backend
+  template:
+    metadata:
+      labels:
+        app: edurando-backend
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      containers:
+        - name: backend
+          image: ghcr.io/krishkalra03/edurando-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9001
+          envFrom:
+            - secretRef:
+                name: edurando-backend-secret
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/uploads/profilePictures
+          readinessProbe:
+            tcpSocket:
+              port: 9001
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 5
+          livenessProbe:
+            tcpSocket:
+              port: 9001
+            initialDelaySeconds: 60
+            periodSeconds: 20
+      volumes:
+        - name: uploads
+          emptyDir: {}
